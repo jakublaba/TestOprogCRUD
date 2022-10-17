@@ -1,8 +1,13 @@
 plugins {
     id 'java'
+    id 'jacoco'
 }
 
-group 'org.example'
+jacoco {
+    toolVersion '0.8.8'
+}
+
+group 'com.krabelard'
 version '1.0-SNAPSHOT'
 
 repositories {
@@ -33,5 +38,10 @@ dependencies {
 }
 
 test {
+    finalizedBy jacocoTestReport
     useJUnitPlatform()
+}
+
+jacocoTestReport {
+    dependsOn test
 }
