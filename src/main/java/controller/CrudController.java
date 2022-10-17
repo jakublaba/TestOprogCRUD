@@ -7,6 +7,7 @@ import model.User;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
+import java.util.Optional;
 
 public class CrudController implements CRUD<User> {
     private final DataSource dataSource;
@@ -21,13 +22,12 @@ public class CrudController implements CRUD<User> {
 
     @Override
     public void create(User record) {
-        val sql = "INSERT INTO users VALUES(?,?)";
+        val sql = "INSERT INTO users VALUES(DEFAULT, ?)";
         try (
             val connection = dataSource.getConnection();
             val preparedStatement = connection.prepareStatement(sql)
         ) {
-            preparedStatement.setLong(1, record.id());
-            preparedStatement.setString(2, record.username());
+            preparedStatement.setString(1, record.username());
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -35,7 +35,7 @@ public class CrudController implements CRUD<User> {
     }
 
     @Override
-    public User read(long id) {
+    public Optional<User> read(long id) {
         val sql = "SELECT * FROM users WHERE id = ?";
         try (
             val connection = dataSource.getConnection();
@@ -43,10 +43,12 @@ public class CrudController implements CRUD<User> {
         ) {
             preparedStatement.setLong(1, id);
             val resultSet = preparedStatement.executeQuery();
-            return new User(
-                resultSet.getLong("id"),
+            if (!resultSet.next()) {
+                return Optional.empty();
+            }
+            return Optional.of(new User(
                 resultSet.getString("username")
-            );
+            ));
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
