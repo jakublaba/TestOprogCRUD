@@ -16,15 +16,38 @@ import java.util.Objects;
 
 @Slf4j
 public class DatabaseGenerator {
+
     public static Connection connect(String url, String user, String password) throws SQLException {
+        if (
+            url == null || user == null || password == null
+            || url.isBlank() || user.isBlank() || password.isBlank()
+        ) {
+            throw new IllegalArgumentException("Credentials must be non-null and not blank");
+        }
+
         val connection = DriverManager.getConnection(url, user, password);
         log.info(String.format("%s established", connection));
         return connection;
     }
 
     // Searches for table_schema.sql and table_data.sql in resources, creates and populates table from them
-    public static void generateFromScript(Connection connection, String table) {
+    // Returns list of script names that were executed
+    public static List<String> generateFromScript(Connection connection, String table) throws SQLException {
+        if (connection.isClosed()) {
+            throw new SQLException("Connection must not be closed");
+        }
+
+        if (table == null || table.isBlank()) {
+            throw new IllegalArgumentException("Table name must be non-null and not blank");
+        }
+
         val scripts = List.of(table+"_schema.sql", table+"_data.sql");
+        runScriptsOnDb(connection, scripts);
+
+        return scripts;
+    }
+
+    private static void runScriptsOnDb(Connection connection, List<String> scripts) {
         for (val script : scripts) {
             try (
                 val fileReader = new FileReader(
@@ -41,4 +64,5 @@ public class DatabaseGenerator {
             }
         }
     }
+
 }
