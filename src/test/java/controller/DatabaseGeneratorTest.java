@@ -23,10 +23,10 @@ class DatabaseGeneratorTest {
 
     @CartesianTest(name = "{index} -> url: {0}, user: {1}, password: {2}")
     @DisplayName("Empty credentials test")
-    void connect_shouldThrow_whenAnyCredentialInvalid(
-        @Values(strings = {"", VALID_URL}) String url,
-        @Values(strings = {"", VALID_USER}) String user,
-        @Values(strings = {"", VALID_PASSWORD}) String password
+    void connect_shouldThrow_whenAnyCredentialEmptyOrBlank(
+        @Values(strings = {"", "\t", "\r", "\n", "\f", "\b", " ", VALID_URL}) String url,
+        @Values(strings = {"", "\t", "\r", "\n", "\f", "\b", " ", VALID_USER}) String user,
+        @Values(strings = {"", "\t", "\r", "\n", "\f", "\b", " ", VALID_PASSWORD}) String password
     ) {
         if (url.equals(VALID_URL) && user.equals(VALID_USER) && password.equals(VALID_PASSWORD)) {
             // Ignore combination that is not being tested in this case
