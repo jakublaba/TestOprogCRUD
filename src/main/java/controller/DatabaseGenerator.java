@@ -1,5 +1,6 @@
 package controller;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.ibatis.jdbc.ScriptRunner;
@@ -32,13 +33,13 @@ public class DatabaseGenerator {
 
     // Searches for table_schema.sql resources, creates and populates table from it
     // Returns name of script names that were executed
-    public static String generateFromScript(Connection connection, String table) throws SQLException {
+    public static String generateFromScript(Connection connection, @NonNull String table) throws SQLException {
         if (connection.isClosed()) {
             throw new SQLException("Connection must not be closed");
         }
 
-        if (table == null || table.isBlank()) {
-            throw new IllegalArgumentException("Table name must be non-null and not blank");
+        if (table.isBlank()) {
+            throw new IllegalArgumentException("Table name must not be blank");
         }
 
         val script = String.format("%s_schema.sql", table);
