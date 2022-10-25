@@ -5,9 +5,12 @@ import model.User;
 import org.dbunit.IDatabaseTester;
 import org.dbunit.JdbcDatabaseTester;
 import org.dbunit.PropertiesBasedJdbcDatabaseTester;
+import org.dbunit.database.DatabaseConfig;
+import org.dbunit.database.IDatabaseConnection;
 import org.dbunit.dataset.IDataSet;
 import org.dbunit.dataset.ITable;
 import org.dbunit.dataset.xml.FlatXmlDataSetBuilder;
+import org.dbunit.ext.postgresql.PostgresqlDataTypeFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -30,13 +33,15 @@ public class CrudControllerTest {
     private static final String JDBC_DRIVER_SQREL = "org.postgresql.Driver";
     private static final String DB_UNIT_CONNECTION_SGREL_SHORT = "jdbc:postgresql://localhost:5431/";
     private static final String MOCK_DATABASE_DIR = "/users_mock.xml";
-    private final static String USERNAME = "admin";
+    private final static String USERNAME = "postgres";
     private final static String PASSWORD = "admin";
     private final static String TABLE_NAME = "users";
     private ITable defaultTable;
     private IDatabaseTester databaseTester;
     private CrudController controller;
     private InputStream inputStream;
+    private IDatabaseConnection connection;
+    private DatabaseConfig dbConfig;
 
     @BeforeAll
     void setup() throws Exception {
@@ -47,12 +52,17 @@ public class CrudControllerTest {
 
         inputStream = this.getClass().getResourceAsStream(MOCK_DATABASE_DIR);
         databaseTester = new JdbcDatabaseTester(JDBC_DRIVER_SQREL, DB_UNIT_CONNECTION_SGREL_SHORT, USERNAME, PASSWORD);
+
         IDataSet dataSet = getDataSet();
         defaultTable = dataSet.getTable(TABLE_NAME);
-
         databaseTester.setDataSet(dataSet);
 
         databaseTester.onSetup();
+
+        connection = databaseTester.getConnection();
+        dbConfig = connection.getConfig();
+        dbConfig.setProperty(DatabaseConfig.PROPERTY_DATATYPE_FACTORY, new PostgresqlDataTypeFactory());
+
         controller = new CrudController(DB_UNIT_CONNECTION_SGREL_SHORT, USERNAME, PASSWORD);
     }
 
@@ -65,7 +75,9 @@ public class CrudControllerTest {
     public void create_WithUser_Correct() throws Exception {
         User correctUser = new User("Test");
         controller.create(correctUser);
-        ITable resultingTable = databaseTester.getConnection().createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
+
+        ITable resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
+
         Assertions.assertEquals(resultingTable.getRowCount(), defaultTable.getRowCount() + 1);
     }
 

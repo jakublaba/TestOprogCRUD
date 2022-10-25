@@ -1,8 +1,5 @@
 DROP TABLE IF EXISTS users;
-CREATE TABLE IF NOT EXISTS users (
-                                     id SERIAL PRIMARY KEY,
-                                     username VARCHAR(31) NOT NULL
-);
+CREATE TABLE IF NOT EXISTS users ( id SERIAL PRIMARY KEY,username VARCHAR(31) NOT NULL );
 INSERT INTO users VALUES (DEFAULT, 'Krabelard');
 INSERT INTO users VALUES (DEFAULT, 'Gordon');
 INSERT INTO users VALUES (DEFAULT, 'Sysy');
