@@ -12,7 +12,6 @@ import org.dbunit.dataset.IDataSet;
 import org.dbunit.dataset.ITable;
 import org.dbunit.dataset.xml.FlatXmlDataSetBuilder;
 import org.dbunit.ext.postgresql.PostgresqlDataTypeFactory;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -98,16 +97,11 @@ public class CrudControllerTest {
     /*
      Read operation
     */
-    @ParameterizedTest(name = "{index} -> id: {0}")
-    @ValueSource(longs = {Integer.MIN_VALUE, -1, 0})
-    void read_shouldThrow_whenIdInvalid(long id) {
-        assertThrows(SQLException.class, () -> controller.read(id));
-    }
 
     @ParameterizedTest
     @SneakyThrows
     @ValueSource(longs = {1, 2, 3, 4, 5, 6, 7, 8, 9})
-    void read_shouldReturnNonEmptyOptional_whenIdExists(long id) {
+    void read_shouldReturnNonEmptyOptional_whenIdValid(long id) {
         assertDoesNotThrow(() -> controller.read(id));
         val readResult = controller.read(id);
         assertTrue(readResult.isPresent());
@@ -116,8 +110,8 @@ public class CrudControllerTest {
 
     @SneakyThrows
     @ParameterizedTest
-    @ValueSource(longs = {100, Integer.MAX_VALUE})
-    void read_shouldReturnEmptyOptional_whenIdDoesNotExist(long id) {
+    @ValueSource(longs = {Integer.MIN_VALUE, 0, Integer.MAX_VALUE})
+    void read_shouldReturnEmptyOptional_whenIdInvalid(long id) {
         assertDoesNotThrow(() -> controller.read(id));
         val readResult = controller.read(id);
         assertTrue(readResult.isEmpty());

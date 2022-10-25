@@ -21,7 +21,7 @@ public class CrudController implements CRUD<User> {
     }
 
     @Override
-    public void create(User record) {
+    public void create(User record) throws SQLException {
         val sql = "INSERT INTO users VALUES(DEFAULT, ?)";
         try (
             val connection = dataSource.getConnection();
@@ -29,8 +29,6 @@ public class CrudController implements CRUD<User> {
         ) {
             preparedStatement.setString(1, record.username());
             preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -53,7 +51,7 @@ public class CrudController implements CRUD<User> {
     }
 
     @Override
-    public void update(long id, User newRecord) {
+    public void update(long id, User newRecord) throws SQLException {
         val sql =
             """
             UPDATE users
@@ -67,13 +65,11 @@ public class CrudController implements CRUD<User> {
             preparedStatement.setString(1, newRecord.username());
             preparedStatement.setLong(2, id);
             preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
         }
     }
 
     @Override
-    public void delete(long id) {
+    public void delete(long id) throws SQLException {
         val sql = "DELETE FROM users WHERE id = ?";
         try (
             val connection = dataSource.getConnection();
@@ -81,8 +77,6 @@ public class CrudController implements CRUD<User> {
         ) {
             preparedStatement.setLong(1, id);
             preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
         }
     }
 }
