@@ -1,5 +1,6 @@
 package controller;
 
+import lombok.SneakyThrows;
 import lombok.val;
 import model.User;
 import org.dbunit.IDatabaseTester;
@@ -16,12 +17,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.InputStream;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -106,31 +104,18 @@ public class CrudControllerTest {
     }
 
     @ParameterizedTest
-    @MethodSource("validReadRecordsFactory")
-    void read_shouldReturnNonEmptyOptional_whenIdExists(long id, User expectedUser) {
+    @SneakyThrows
+    @ValueSource(longs = {1, 2, 3, 4, 5, 6, 7, 8, 9})
+    void read_shouldReturnNonEmptyOptional_whenIdExists(long id) {
         assertDoesNotThrow(() -> controller.read(id));
         val readResult = controller.read(id);
         assertTrue(readResult.isPresent());
-        assertEquals(expectedUser, readResult.get());
-    }
-
-    private Stream<Arguments> validReadRecordsFactory() {
-        return Stream.of(
-            Arguments.of(1, new User("Krabelard")),
-            Arguments.of(2, new User("Gordon")),
-            Arguments.of(3, new User("Sysy")),
-            Arguments.of(4, new User("Szniok")),
-            Arguments.of(5, new User("Gniok")),
-            Arguments.of(6, new User("Craig")),
-            Arguments.of(7, new User("MrZaroweczka")),
-            Arguments.of(8, new User("Grypsztal's")),
-            Arguments.of(9, new User("Dziok"))
-        );
+        assertEquals(defaultTable.getValue((int) id - 1 ,"username"), readResult.get().username());
     }
 
     @ParameterizedTest
     @ValueSource(longs = {100, Integer.MAX_VALUE})
-    void read_shouldReturnEmptyOptional_whenIdDoesNotExist (long id) {
+    void read_shouldReturnEmptyOptional_whenIdDoesNotExist(long id) {
         assertDoesNotThrow(() -> controller.read(id));
         val readResult = controller.read(id);
         assertTrue(readResult.isEmpty());
