@@ -35,7 +35,7 @@ public class CrudController implements CRUD<User> {
     }
 
     @Override
-    public Optional<User> read(long id) {
+    public Optional<User> read(long id) throws SQLException {
         val sql = "SELECT * FROM users WHERE id = ?";
         try (
             val connection = dataSource.getConnection();
@@ -49,8 +49,6 @@ public class CrudController implements CRUD<User> {
             return Optional.of(new User(
                 resultSet.getString("username")
             ));
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
         }
     }
 

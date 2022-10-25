@@ -20,6 +20,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.InputStream;
+import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -76,7 +77,7 @@ public class CrudControllerTest {
 
         ITable resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
 
-        Assertions.assertEquals(resultingTable.getRowCount(), defaultTable.getRowCount() + 1);
+        assertEquals(resultingTable.getRowCount(), defaultTable.getRowCount() + 1);
     }
 
     @Test
@@ -95,12 +96,12 @@ public class CrudControllerTest {
     }
 
     /*
-    Read operation
-     */
-    @ParameterizedTest
+     Read operation
+    */
+    @ParameterizedTest(name = "{index} -> id: {0}")
     @ValueSource(longs = {Integer.MIN_VALUE, -1, 0})
     void read_shouldThrow_whenIdInvalid(long id) {
-        assertThrows(RuntimeException.class, () -> controller.read(id));
+        assertThrows(SQLException.class, () -> controller.read(id));
     }
 
     @ParameterizedTest
@@ -113,6 +114,7 @@ public class CrudControllerTest {
         assertEquals(defaultTable.getValue((int) id - 1 ,"username"), readResult.get().username());
     }
 
+    @SneakyThrows
     @ParameterizedTest
     @ValueSource(longs = {100, Integer.MAX_VALUE})
     void read_shouldReturnEmptyOptional_whenIdDoesNotExist(long id) {
