@@ -4,7 +4,7 @@
 docker ps 2> /dev/null
 if [ $? -ne 0 ]; then
     echo "Docker daemon is not running, make sure it is running and then rerun this script"
-    exit
+    exit 1
 fi
 docker stop to-db 2> /dev/null
 docker rm to-db 2> /dev/null
