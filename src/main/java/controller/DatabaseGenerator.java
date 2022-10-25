@@ -30,9 +30,9 @@ public class DatabaseGenerator {
         return connection;
     }
 
-    // Searches for table_schema.sql and table_data.sql in resources, creates and populates table from them
-    // Returns list of script names that were executed
-    public static List<String> generateFromScript(Connection connection, String table) throws SQLException {
+    // Searches for table_schema.sql resources, creates and populates table from it
+    // Returns name of script names that were executed
+    public static String generateFromScript(Connection connection, String table) throws SQLException {
         if (connection.isClosed()) {
             throw new SQLException("Connection must not be closed");
         }
@@ -41,27 +41,25 @@ public class DatabaseGenerator {
             throw new IllegalArgumentException("Table name must be non-null and not blank");
         }
 
-        val scripts = List.of(table+"_schema.sql", table+"_data.sql");
-        runScriptsOnDb(connection, scripts);
+        val script = String.format("%s_schema.sql", table);
+        runScriptOnDb(connection, script);
 
-        return scripts;
+        return script;
     }
 
-    private static void runScriptsOnDb(Connection connection, List<String> scripts) {
-        for (val script : scripts) {
-            try (
-                val fileReader = new FileReader(
-                    Objects.requireNonNull(DatabaseGenerator.class.getClassLoader().getResource(script)).getFile()
-                );
-                val bufferedReader = new BufferedReader(fileReader)
-            ) {
-                val scriptRunner = new ScriptRunner(connection);
-                scriptRunner.runScript(bufferedReader);
-            } catch (FileNotFoundException e) {
-                throw new RuntimeException(String.format("%s - file not found", script), e);
-            } catch (IOException e) {
-                throw new RuntimeException(String.format("Unexpected exception while reading %s", script), e);
-            }
+    private static void runScriptOnDb(Connection connection, String script) {
+        try (
+            val fileReader = new FileReader(
+                Objects.requireNonNull(DatabaseGenerator.class.getClassLoader().getResource(script)).getFile()
+            );
+            val bufferedReader = new BufferedReader(fileReader)
+        ) {
+            val scriptRunner = new ScriptRunner(connection);
+            scriptRunner.runScript(bufferedReader);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(String.format("%s - file not found", script), e);
+        } catch (IOException e) {
+            throw new RuntimeException(String.format("Unexpected exception while reading %s", script), e);
         }
     }
 
