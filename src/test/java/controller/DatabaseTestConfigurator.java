@@ -36,13 +36,22 @@ class DatabaseTestConfigurator {
     @Getter
     private final IDatabaseConnection databaseConnection;
 
+    private final IDataSet dataSet;
+
     @SneakyThrows
     DatabaseTestConfigurator() {
         setDatabaseSystemProperties();
-        IDataSet dataSet = getDataSetFromResource();
+        dataSet = getDataSetFromResource();
         userTable = dataSet.getTable(USERS_TABLE_NAME);
         databaseConnection = getConnectionToDatabase(dataSet);
         userCrud = createCrudController();
+    }
+
+    @SneakyThrows
+    void setUpDataSet() {
+        final var databaseTester = new JdbcDatabaseTester(JDBC_DRIVER_SQREL, DB_UNIT_CONNECTION_SGREL_SHORT, USERNAME, PASSWORD);
+        databaseTester.setDataSet(dataSet);
+        databaseTester.onSetup();
     }
 
     private static IDataSet getDataSetFromResource() throws DataSetException {

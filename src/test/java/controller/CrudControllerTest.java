@@ -3,9 +3,12 @@ package controller;
 import lombok.SneakyThrows;
 import lombok.val;
 import model.User;
+import org.assertj.core.api.Assertions;
 import org.dbunit.database.IDatabaseConnection;
 import org.dbunit.dataset.ITable;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -25,12 +28,24 @@ class CrudControllerTest {
     private CRUD<User> controller;
     private IDatabaseConnection connection;
 
+    private DatabaseTestConfigurator databaseTestConfigurator;
+
     @BeforeAll
     void setup() {
-        final var configurator = new DatabaseTestConfigurator();
-        userTable = configurator.getUserTable();
-        controller = configurator.getUserCrud();
-        connection = configurator.getDatabaseConnection();
+        databaseTestConfigurator = new DatabaseTestConfigurator();
+        userTable = databaseTestConfigurator.getUserTable();
+        controller = databaseTestConfigurator.getUserCrud();
+        connection = databaseTestConfigurator.getDatabaseConnection();
+    }
+
+    @BeforeEach
+    void reloadDataSet() {
+        databaseTestConfigurator.setUpDataSet();
+    }
+
+    @AfterAll
+    void tearDown() throws Exception {
+        connection.close();
     }
 
     @Nested
@@ -43,7 +58,7 @@ class CrudControllerTest {
 
             ITable resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
 
-            assertEquals(resultingTable.getRowCount(), userTable.getRowCount() + 1);
+            assertEquals(userTable.getRowCount() + 1, resultingTable.getRowCount());
         }
 
         @Test
@@ -61,7 +76,6 @@ class CrudControllerTest {
 
         }
     }
-
 
     @Nested
     class Read {
@@ -132,27 +146,49 @@ class CrudControllerTest {
     // wg olszewskiego powinno być tych testów ( gdzie test dla danego parametru liczy się jako pojedynczy test)
     // powinno być 4 * 4, wszystkie możliwe kombinacje dla złego id i złęgo usera
 
+    // TODO: Parameterized tests with a few more test cases
     @Nested
     class Delete {
 
+        @SneakyThrows
         @Test
         public void delete_WithId_Existing() {
+            // given an id that is in the database
+            final long idOfExistingUser = 10;
 
+            // when
+            assertDoesNotThrow(() -> controller.delete(idOfExistingUser));
+
+            // then
+            final var resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME + " WHERE id = " + idOfExistingUser);
+
+            Assertions.assertThat(resultingTable.getRowCount())
+                    .isEqualTo(0);
         }
 
+        @SneakyThrows
         @Test
         public void delete_WithId_Nonexistent() {
+            // given that a user of this id does not exist
+            final long idOfNonexistentUser = 2147483647;
 
+            // when
+            assertDoesNotThrow(() -> controller.delete(idOfNonexistentUser));
+
+            // then
+            final var resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
+
+            Assertions.assertThat(resultingTable.getRowCount())
+                    .isEqualTo(userTable.getRowCount());
         }
 
         @Test
         public void delete_WithId_Negative() {
+            // given that a user of this id does not exist
+            final long idOfNonexistentUser = -1;
 
-        }
-
-        @Test
-        public void delete_WithId_MAX_INTEGER_And_MIN_INTEGER() {
-
+            // when, then
+            assertThrows(IllegalArgumentException.class, () -> controller.delete(idOfNonexistentUser));
         }
     }
 
