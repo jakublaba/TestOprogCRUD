@@ -3,23 +3,14 @@ package controller;
 import lombok.SneakyThrows;
 import lombok.val;
 import model.User;
-import org.dbunit.IDatabaseTester;
-import org.dbunit.JdbcDatabaseTester;
-import org.dbunit.PropertiesBasedJdbcDatabaseTester;
-import org.dbunit.database.DatabaseConfig;
 import org.dbunit.database.IDatabaseConnection;
-import org.dbunit.dataset.IDataSet;
 import org.dbunit.dataset.ITable;
-import org.dbunit.dataset.xml.FlatXmlDataSetBuilder;
-import org.dbunit.ext.postgresql.PostgresqlDataTypeFactory;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import java.io.InputStream;
-import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,159 +18,142 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class CrudControllerTest {
-    private static final String JDBC_DRIVER_SQREL = "org.postgresql.Driver";
-    private static final String DB_UNIT_CONNECTION_SGREL_SHORT = "jdbc:postgresql://localhost:5431/";
-    private static final String MOCK_DATABASE_DIR = "/users_mock.xml";
-    private final static String USERNAME = "postgres";
-    private final static String PASSWORD = "admin";
+class CrudControllerTest {
+
     private final static String TABLE_NAME = "users";
-    private ITable defaultTable;
-    private IDatabaseTester databaseTester;
-    private CrudController controller;
-    private InputStream inputStream;
+    private ITable userTable;
+    private CRUD<User> controller;
     private IDatabaseConnection connection;
-    private DatabaseConfig dbConfig;
 
     @BeforeAll
-    void setup() throws Exception {
-        System.setProperty(PropertiesBasedJdbcDatabaseTester.DBUNIT_DRIVER_CLASS, JDBC_DRIVER_SQREL);
-        System.setProperty(PropertiesBasedJdbcDatabaseTester.DBUNIT_CONNECTION_URL, DB_UNIT_CONNECTION_SGREL_SHORT);
-        System.setProperty(PropertiesBasedJdbcDatabaseTester.DBUNIT_USERNAME, USERNAME);
-        System.setProperty(PropertiesBasedJdbcDatabaseTester.DBUNIT_PASSWORD, PASSWORD);
-
-        inputStream = this.getClass().getResourceAsStream(MOCK_DATABASE_DIR);
-        databaseTester = new JdbcDatabaseTester(JDBC_DRIVER_SQREL, DB_UNIT_CONNECTION_SGREL_SHORT, USERNAME, PASSWORD);
-
-        IDataSet dataSet = getDataSet();
-        defaultTable = dataSet.getTable(TABLE_NAME);
-        databaseTester.setDataSet(dataSet);
-
-        databaseTester.onSetup();
-
-        connection = databaseTester.getConnection();
-        dbConfig = connection.getConfig();
-        dbConfig.setProperty(DatabaseConfig.PROPERTY_DATATYPE_FACTORY, new PostgresqlDataTypeFactory());
-
-        controller = new CrudController(DB_UNIT_CONNECTION_SGREL_SHORT, USERNAME, PASSWORD);
+    void setup() {
+        final var configurator = new DatabaseTestConfigurator();
+        userTable = configurator.getUserTable();
+        controller = configurator.getUserCrud();
+        connection = configurator.getDatabaseConnection();
     }
 
-    protected IDataSet getDataSet() throws Exception {
-        return new FlatXmlDataSetBuilder().build(
-                inputStream);
+    @Nested
+    class Create {
+
+        @Test
+        public void create_WithUser_Correct() throws Exception {
+            User correctUser = new User("Test");
+            controller.create(correctUser);
+
+            ITable resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
+
+            assertEquals(resultingTable.getRowCount(), userTable.getRowCount() + 1);
+        }
+
+        @Test
+        public void create_WithUser_Null() {
+
+        }
+
+        @Test
+        public void create_WithUser_Name_Null() {
+
+        }
+
+        @Test
+        public void create_WithUser_Name_SqlInjection() {
+
+        }
     }
 
-    @Test
-    public void create_WithUser_Correct() throws Exception {
-        User correctUser = new User("Test");
-        controller.create(correctUser);
 
-        ITable resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
+    @Nested
+    class Read {
+        @ParameterizedTest
+        @SneakyThrows
+        @ValueSource(longs = {1, 2, 3, 4, 5, 6, 7, 8, 9})
+        void read_shouldReturnNonEmptyOptional_whenIdValid(long id) {
+            assertDoesNotThrow(() -> controller.read(id));
+            val readResult = controller.read(id);
+            assertTrue(readResult.isPresent());
+            assertEquals(userTable.getValue((int) id - 1 ,"username"), readResult.get().username());
+        }
 
-        assertEquals(resultingTable.getRowCount(), defaultTable.getRowCount() + 1);
+        @SneakyThrows
+        @ParameterizedTest
+        @ValueSource(longs = {Integer.MIN_VALUE, 0, Integer.MAX_VALUE})
+        void read_shouldReturnEmptyOptional_whenIdInvalid(long id) {
+            assertDoesNotThrow(() -> controller.read(id));
+            val readResult = controller.read(id);
+            assertTrue(readResult.isEmpty());
+        }
     }
 
-    @Test
-    public void create_WithUser_Null() {
+    @Nested
+    class Update {
 
-    }
 
-    @Test
-    public void create_WithUser_Name_Null() {
+        @Test
+        public void update_WithId_Existing() {
 
-    }
+        }
 
-    @Test
-    public void create_WithUser_Name_SqlInjection() {
+        @Test
+        public void update_WithId_Nonexistent() {
 
-    }
+        }
 
-    /*
-     Read operation
-    */
+        @Test
+        public void update_WithId_Negative() {
 
-    @ParameterizedTest
-    @SneakyThrows
-    @ValueSource(longs = {1, 2, 3, 4, 5, 6, 7, 8, 9})
-    void read_shouldReturnNonEmptyOptional_whenIdValid(long id) {
-        assertDoesNotThrow(() -> controller.read(id));
-        val readResult = controller.read(id);
-        assertTrue(readResult.isPresent());
-        assertEquals(defaultTable.getValue((int) id - 1 ,"username"), readResult.get().username());
-    }
+        }
 
-    @SneakyThrows
-    @ParameterizedTest
-    @ValueSource(longs = {Integer.MIN_VALUE, 0, Integer.MAX_VALUE})
-    void read_shouldReturnEmptyOptional_whenIdInvalid(long id) {
-        assertDoesNotThrow(() -> controller.read(id));
-        val readResult = controller.read(id);
-        assertTrue(readResult.isEmpty());
-    }
+        @Test
+        public void update_WithId_MAX_INTEGER_And_MIN_INTEGER() {
 
-    /*
-    Update operation
-     */
-    @Test
-    public void update_WithId_Existing() {
+        }
 
-    }
+        @Test
+        public void update_WithUser_Incorrect() {
 
-    @Test
-    public void update_WithId_Nonexistent() {
+        }
 
-    }
+        @Test
+        public void update_WithUser_Name_Incorrect() {
 
-    @Test
-    public void update_WithId_Negative() {
+        }
 
-    }
+        @Test
+        public void update_WithUser_Incorrect_Id_Correct() {
 
-    @Test
-    public void update_WithId_MAX_INTEGER_And_MIN_INTEGER() {
+        }
 
-    }
+        @Test
+        public void update_WithUser_Correct_Id_Correct() {
 
-    @Test
-    public void update_WithUser_Incorrect() {
-
-    }
-
-    @Test
-    public void update_WithUser_Name_Incorrect() {
-
-    }
-
-    @Test
-    public void update_WithUser_Incorrect_Id_Correct() {
-
-    }
-
-    @Test
-    public void update_WithUser_Correct_Id_Correct() {
-
+        }
     }
     // wg olszewskiego powinno być tych testów ( gdzie test dla danego parametru liczy się jako pojedynczy test)
     // powinno być 4 * 4, wszystkie możliwe kombinacje dla złego id i złęgo usera
 
-    @Test
-    public void delete_WithId_Existing() {
+    @Nested
+    class Delete {
 
-    }
+        @Test
+        public void delete_WithId_Existing() {
 
-    @Test
-    public void delete_WithId_Nonexistent() {
+        }
 
-    }
+        @Test
+        public void delete_WithId_Nonexistent() {
 
-    @Test
-    public void delete_WithId_Negative() {
+        }
 
-    }
+        @Test
+        public void delete_WithId_Negative() {
 
-    @Test
-    public void delete_WithId_MAX_INTEGER_And_MIN_INTEGER() {
+        }
 
+        @Test
+        public void delete_WithId_MAX_INTEGER_And_MIN_INTEGER() {
+
+        }
     }
 
 }
