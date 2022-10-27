@@ -54,8 +54,17 @@ public class CrudController implements CRUD<User> {
 
     @Override
     public void update(long id, User newRecord) throws SQLException {
-        if(newRecord.username().isBlank())
-            throw new IllegalArgumentException("Username must not be blank.");
+        if (newRecord == null){
+            throw new IllegalArgumentException("User must not be null");
+        }
+        if (newRecord.username().isBlank()) {
+            throw new IllegalArgumentException("Username must not be blank");
+        }
+        if (id <= 0) {
+            throw new IllegalArgumentException("User id must be positive");
+        }
+
+
         val sql =
             """
             UPDATE users
