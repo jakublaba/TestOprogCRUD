@@ -55,6 +55,9 @@ public class CrudController implements CRUD<User> {
         if (newRecord == null){
             throw new IllegalArgumentException("User must not be null");
         }
+        if (newRecord.username().isBlank()) {
+            throw new IllegalArgumentException("Username must not be blank");
+        }
         if (id <= 0) {
             throw new IllegalArgumentException("User id must be positive");
         }
