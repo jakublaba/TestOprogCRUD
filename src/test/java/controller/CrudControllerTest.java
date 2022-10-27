@@ -134,8 +134,7 @@ class CrudControllerTest {
             //given
             User userUpdate = new User("UpdatedUser");
             //when
-            assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
-
+            assertDoesNotThrow(() -> controller.update(id, userUpdate));
         }
 
 
@@ -156,7 +155,7 @@ class CrudControllerTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {" ", "\t", "\b", "\n"})
+        @ValueSource(strings = {" ", "\t", "\n"})
         public void update_ShouldThrowException_WhenIdIsCorrect_AndUserIsWhitespace(String username){
             long id = 1;
             User userUpdate = new User(username);
