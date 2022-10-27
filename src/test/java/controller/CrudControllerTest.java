@@ -11,6 +11,7 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.postgresql.util.PSQLException;
 
@@ -30,7 +31,6 @@ class CrudControllerTest {
     private ITable userTable;
     private CRUD<User> controller;
     private IDatabaseConnection connection;
-
     private DatabaseTestConfigurator databaseTestConfigurator;
 
 
@@ -59,89 +59,74 @@ class CrudControllerTest {
 
     @Nested
     class Create {
-        @ParameterizedTest
+
         @SneakyThrows
+        @ParameterizedTest
         @MethodSource("correctUserGenerator")
         void create_shouldAddNewEntry_whenUserValid(User user) {
-            // when given a user with correct name
-
-            //when
             assertDoesNotThrow(() -> controller.create(user));
 
-            //then
             ITable resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
             assertEquals(userTable.getRowCount() + 1, resultingTable.getRowCount());
         }
 
-        @ParameterizedTest
         @SneakyThrows
+        @ParameterizedTest
         @MethodSource("incorrectUserGeneratorPsqlManaged")
         void create_shouldThrowException_whenUserInvalidBySqlStandard(User user) {
-            //when given an incorrect user
-
-            //when
             assertThrows(PSQLException.class,() -> controller.create(user));
 
-            //then
             ITable resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
             assertEquals(userTable.getRowCount(), resultingTable.getRowCount());
 
         }
-        @ParameterizedTest
+
         @SneakyThrows
+        @ParameterizedTest
         @MethodSource("incorrectUserGenerator")
         void create_shouldThrowException_whenUserInvalidByAppLogicStandard(User user) {
-            // when given a user with correct name
-
-            //when
             Exception e = assertThrows(IllegalArgumentException.class,() -> controller.create(user));
 
-            //then
             ITable resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
             assertEquals(userTable.getRowCount() , resultingTable.getRowCount());
             assertEquals("Username must not be blank.",e.getMessage());
         }
-        @Test
-        @SneakyThrows
-        void create_shouldThrowException_whenUserNull()
-        {
-            // when given a user with correct name
-            User user = null;
 
-            //when
+        @SneakyThrows
+        @ParameterizedTest
+        @NullSource
+        void create_shouldThrowException_whenUserNull(User user) {
             assertThrows(NullPointerException.class,() -> controller.create(user));
 
-            //then
             ITable resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
             assertEquals(userTable.getRowCount(), resultingTable.getRowCount());
         }
+
         private static Stream<Arguments> incorrectUserGeneratorPsqlManaged() {
-
             return Stream.of(
-                    Arguments.of(new User("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
-                    Arguments.of(new User("\0"))
-                    );
-        }
-        private static Stream<Arguments> correctUserGenerator() {
-
-            return Stream.of(
-                    Arguments.of(new User("Krabelard")),
-                    Arguments.of(new User("Zażółć gęślą jaźń")),
-                    Arguments.of(new User("TEST")),
-                    Arguments.of(new User("SELECT * FROM users")),
-                    Arguments.of(new User("null"))
-
+                Arguments.of(new User("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
+                Arguments.of(new User("\0"))
             );
         }
-        private static Stream<Arguments> incorrectUserGenerator()
-        {
+
+        private static Stream<Arguments> correctUserGenerator() {
             return Stream.of(
-                    Arguments.of(new User(" ")),
-                    Arguments.of(new User("")),
-                    Arguments.of(new User("\n")),
-                    Arguments.of(new User("\t")),
-                    Arguments.of(new User("\r")),
-                    Arguments.of(new User("\f"))
+                Arguments.of(new User("Krabelard")),
+                Arguments.of(new User("Zażółć gęślą jaźń")),
+                Arguments.of(new User("TEST")),
+                Arguments.of(new User("SELECT * FROM users")),
+                Arguments.of(new User("null"))
+            );
+        }
+
+        private static Stream<Arguments> incorrectUserGenerator() {
+            return Stream.of(
+                Arguments.of(new User(" ")),
+                Arguments.of(new User("")),
+                Arguments.of(new User("\n")),
+                Arguments.of(new User("\t")),
+                Arguments.of(new User("\r")),
+                Arguments.of(new User("\f"))
             );
         }
 
