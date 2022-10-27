@@ -36,6 +36,9 @@ public class CrudController implements CRUD<User> {
 
     @Override
     public Optional<User> read(long id) throws SQLException {
+        if (id <= 0) {
+            throw new IllegalArgumentException("id must be greater than 0");
+        }
         val sql = "SELECT * FROM users WHERE id = ?";
         try (
             val connection = dataSource.getConnection();
