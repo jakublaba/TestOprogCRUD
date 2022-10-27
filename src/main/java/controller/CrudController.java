@@ -70,6 +70,10 @@ public class CrudController implements CRUD<User> {
 
     @Override
     public void delete(long id) throws SQLException {
+        if (id <= 0) {
+            throw new IllegalArgumentException("User id must be positive");
+        }
+
         val sql = "DELETE FROM users WHERE id = ?";
         try (
             val connection = dataSource.getConnection();
