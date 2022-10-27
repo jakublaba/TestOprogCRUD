@@ -70,7 +70,7 @@ public class CrudController implements CRUD<User> {
 
     @Override
     public void delete(long id) throws SQLException {
-        if (id < 0) {
+        if (id <= 0) {
             throw new IllegalArgumentException("User id must be positive");
         }
 

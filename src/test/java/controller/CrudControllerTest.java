@@ -7,6 +7,7 @@ import org.assertj.core.api.Assertions;
 import org.dbunit.database.IDatabaseConnection;
 import org.dbunit.dataset.ITable;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -41,6 +42,11 @@ class CrudControllerTest {
     @BeforeEach
     void reloadDataSet() {
         databaseTestConfigurator.setUpDataSet();
+    }
+
+    @AfterEach
+    void tearDownDataSet() {
+        databaseTestConfigurator.tearDown();
     }
 
     @AfterAll
@@ -146,7 +152,7 @@ class CrudControllerTest {
     // wg olszewskiego powinno być tych testów ( gdzie test dla danego parametru liczy się jako pojedynczy test)
     // powinno być 4 * 4, wszystkie możliwe kombinacje dla złego id i złęgo usera
 
-    // TODO: Parameterized tests with a few more test cases
+    // TODO#12: Parameterized tests with a few more test cases
     @Nested
     class Delete {
 

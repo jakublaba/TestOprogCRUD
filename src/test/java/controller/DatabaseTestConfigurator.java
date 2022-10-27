@@ -3,6 +3,7 @@ package controller;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import model.User;
+import org.dbunit.IDatabaseTester;
 import org.dbunit.JdbcDatabaseTester;
 import org.dbunit.PropertiesBasedJdbcDatabaseTester;
 import org.dbunit.database.DatabaseConfig;
@@ -36,22 +37,29 @@ class DatabaseTestConfigurator {
     @Getter
     private final IDatabaseConnection databaseConnection;
 
-    private final IDataSet dataSet;
+    private final IDataSet userDataSetToInsert;
+
+    private IDatabaseTester userDatabaseTester;
 
     @SneakyThrows
     DatabaseTestConfigurator() {
         setDatabaseSystemProperties();
-        dataSet = getDataSetFromResource();
-        userTable = dataSet.getTable(USERS_TABLE_NAME);
-        databaseConnection = getConnectionToDatabase(dataSet);
+        userDataSetToInsert = getDataSetFromResource();
+        userTable = userDataSetToInsert.getTable(USERS_TABLE_NAME);
+        databaseConnection = getConnectionToDatabase();
         userCrud = createCrudController();
     }
 
     @SneakyThrows
     void setUpDataSet() {
-        final var databaseTester = new JdbcDatabaseTester(JDBC_DRIVER_SQREL, DB_UNIT_CONNECTION_SGREL_SHORT, USERNAME, PASSWORD);
-        databaseTester.setDataSet(dataSet);
-        databaseTester.onSetup();
+        userDatabaseTester = new JdbcDatabaseTester(JDBC_DRIVER_SQREL, DB_UNIT_CONNECTION_SGREL_SHORT, USERNAME, PASSWORD);
+        userDatabaseTester.setDataSet(userDataSetToInsert);
+        userDatabaseTester.onSetup();
+    }
+
+    @SneakyThrows
+    void tearDown() {
+        userDatabaseTester.onTearDown();
     }
 
     private static IDataSet getDataSetFromResource() throws DataSetException {
@@ -60,9 +68,9 @@ class DatabaseTestConfigurator {
                 mockUserXmlStream);
     }
 
-    private static IDatabaseConnection getConnectionToDatabase(IDataSet dataSet) throws Exception {
+    private IDatabaseConnection getConnectionToDatabase() throws Exception {
         final var databaseTester = new JdbcDatabaseTester(JDBC_DRIVER_SQREL, DB_UNIT_CONNECTION_SGREL_SHORT, USERNAME, PASSWORD);
-        databaseTester.setDataSet(dataSet);
+        databaseTester.setDataSet(userDataSetToInsert);
         databaseTester.onSetup();
 
         final var connection = databaseTester.getConnection();
