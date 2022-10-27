@@ -144,8 +144,11 @@ class CrudControllerTest {
         {
             return Stream.of(
                     Arguments.of(new User(" ")),
+                    Arguments.of(new User("")),
                     Arguments.of(new User("\n")),
-                    Arguments.of(new User("\t"))
+                    Arguments.of(new User("\t")),
+                    Arguments.of(new User("\r")),
+                    Arguments.of(new User("\f"))
             );
         }
 
