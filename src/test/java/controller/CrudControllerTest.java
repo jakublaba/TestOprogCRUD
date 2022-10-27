@@ -59,7 +59,8 @@ class CrudControllerTest {
     class Create {
 
         @SneakyThrows
-        @ParameterizedTest
+        @ParameterizedTest(name = "{index} -> user={0}")
+        @DisplayName("CrudController#create - should add entry to database for valid User object")
         @MethodSource("correctUserGenerator")
         void create_shouldAddNewEntry_whenUserValid(User user) {
             assertDoesNotThrow(() -> controller.create(user));
@@ -69,7 +70,8 @@ class CrudControllerTest {
         }
 
         @SneakyThrows
-        @ParameterizedTest
+        @ParameterizedTest(name = "{index} -> user={0}")
+        @DisplayName("CrudController#create - should throw SQLException for User object invalid by SQL standard")
         @MethodSource("incorrectUserGeneratorPsqlManaged")
         void create_shouldThrowException_whenUserInvalidBySqlStandard(User user) {
             assertThrows(PSQLException.class,() -> controller.create(user));
@@ -80,7 +82,8 @@ class CrudControllerTest {
         }
 
         @SneakyThrows
-        @ParameterizedTest
+        @ParameterizedTest(name = "{index} -> user={0}")
+        @DisplayName("CrudController#create -  should throw IllegalArgumentException for User object invalid by business logic")
         @MethodSource("incorrectUserGenerator")
         void create_shouldThrowException_whenUserInvalidByAppLogicStandard(User user) {
             val expectedMessage = "Username must not be blank.";
@@ -92,7 +95,8 @@ class CrudControllerTest {
         }
 
         @SneakyThrows
-        @ParameterizedTest
+        @ParameterizedTest(name = "{index} -> user={0}")
+        @DisplayName("CrudController#create - should throw NullPointerException for null User object")
         @NullSource
         void create_shouldThrowException_whenUserNull(User user) {
             assertThrows(NullPointerException.class,() -> controller.create(user));
@@ -175,7 +179,8 @@ class CrudControllerTest {
     class Update {
 
         @SneakyThrows
-        @ParameterizedTest
+        @ParameterizedTest(name = "{index} -> id={0}")
+        @DisplayName("CrudController#update - ")
         @ValueSource(longs = {1, 2, 3, 4, 5, 6, 7, 8, 9})
         public void update_ShouldUpdateUser_WhenIdIsInDatabase_AndUserIsCorrect(long id) {
             val userUpdate = new User("UpdatedUser");
@@ -187,7 +192,8 @@ class CrudControllerTest {
 
         }
 
-        @ParameterizedTest
+        @ParameterizedTest(name = "{index} -> id={0}")
+        @DisplayName("CrudController#update - should not throw exception for non-existent id and valid User object")
         @ValueSource(longs = {100, Integer.MAX_VALUE})
         public void update_ShouldThrowException_WhenIdIsCorrectButNotInDatabase_AndUserIsCorrect(long id) {
             val userUpdate = new User("UpdatedUser");
@@ -195,15 +201,17 @@ class CrudControllerTest {
             assertDoesNotThrow(() -> controller.update(id, userUpdate));
         }
 
-        @ParameterizedTest
-        @ValueSource(longs = {Integer.MIN_VALUE, -1})
+        @ParameterizedTest(name = "{index} -> id={0}")
+        @DisplayName("CrudController#update - should throw IllegalArgumentException for id <= 0")
+        @ValueSource(longs = {Integer.MIN_VALUE, -1, 0})
         public void update_ShouldThrowException_WhenIdIsNegative_AndUserIsCorrect(long id) {
             val userUpdate = new User("UpdatedUser");
 
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
 
-        @ParameterizedTest
+        @ParameterizedTest(name = "{index} -> id={0}")
+        @DisplayName("CrudController#update - should throw IllegalArgumentException for existing id and null User object")
         @ValueSource(longs = {1, 2, 3, 4, 5, 6, 7, 8, 9})
         public void update_ShouldThrowException_WhenIdIsCorrect_AndUserIsNull(long id) {
             User userUpdate = null;
@@ -212,6 +220,7 @@ class CrudControllerTest {
         }
 
         @ParameterizedTest
+        @DisplayName("CrudController#update - should throw IllegalArgumentException for existing id and User object with blank username")
         @ValueSource(strings = {" ", "\t", "\n"})
         public void update_ShouldThrowException_WhenIdIsCorrect_AndUserIsWhitespace(String username) {
             long id = 1;
@@ -220,15 +229,17 @@ class CrudControllerTest {
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
 
-        @ParameterizedTest
-        @ValueSource(longs = {Integer.MIN_VALUE, -1})
+        @ParameterizedTest(name = "{index} -> id={0}")
+        @DisplayName("CrudController#update - should throw IllegalArgumentException for id <= 0 and null User object")
+        @ValueSource(longs = {Integer.MIN_VALUE, -1, 0})
         public void update_ShouldThrowException_WhenIdIsNegative_AndUserIsNull(long id) {
             User userUpdate = null;
 
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
 
-        @ParameterizedTest
+        @ParameterizedTest(name = "{index} -> id={0}")
+        @DisplayName("CrudController#update - should throw IllegalArgumentException for non-existent id and null User object")
         @ValueSource(longs = {100, Integer.MAX_VALUE})
         public void update_ShouldThrowException_WhenIdIsCorrectButNotInDatabase_AndUserIsNull(long id) {
             User userUpdate = null;
@@ -236,7 +247,8 @@ class CrudControllerTest {
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
         
-        @ParameterizedTest
+        @ParameterizedTest(name = "{index} -> username={0}, id={1}")
+        @DisplayName("CrudController#update - should throw IllegalArgumentException for id <= 0 and User object with blank username")
         @MethodSource("provideParametersForIdNegative")
         public void update_ShouldThrowException_WhenIdIsNegative_AndUserIsWhitespace(String username, long id) {
             User userUpdate = new User(username);
@@ -244,7 +256,8 @@ class CrudControllerTest {
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
         
-        @ParameterizedTest
+        @ParameterizedTest(name = "{index} -> username={0}, id={1}")
+        @DisplayName("CrudController#update - should throw IllegalArgumentException for non-existent id and User object with blank username")
         @MethodSource("provideParametersForIdCorrectButNotInDatabase")
         public void update_ShouldThrowException_WhenIdIsCorrectButNotInDatabase_AndUserIsWhitespace(String username, long id){
             User userUpdate = new User(username);
