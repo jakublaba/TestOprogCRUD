@@ -22,6 +22,8 @@ public class CrudController implements CRUD<User> {
 
     @Override
     public void create(User record) throws SQLException {
+        if(record.username().isBlank())
+            throw new IllegalArgumentException("Username must not be blank.");
         val sql = "INSERT INTO users VALUES(DEFAULT, ?)";
         try (
             val connection = dataSource.getConnection();
@@ -61,6 +63,7 @@ public class CrudController implements CRUD<User> {
         if (id <= 0) {
             throw new IllegalArgumentException("User id must be positive");
         }
+
 
         val sql =
             """
