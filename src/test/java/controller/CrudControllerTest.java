@@ -15,9 +15,12 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.sql.SQLException;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -114,7 +117,7 @@ class CrudControllerTest {
 
         @ParameterizedTest
         @ValueSource(longs = {1, 2, 3, 4, 5, 6, 7, 8, 9})
-        public void update_WithId_Existing(long id) throws DataSetException, SQLException {
+        public void update_ShouldUpdateUser_WhenIdIsInDatabase_AndUserIsCorrect(long id) throws DataSetException, SQLException {
             //given
             User userUpdate = new User("UpdatedUser");
             //when
@@ -127,26 +130,18 @@ class CrudControllerTest {
 
         @ParameterizedTest
         @ValueSource(longs = {100, Integer.MAX_VALUE})
-        public void update_WithId_Nonexistent(long id) throws SQLException {
+        public void update_ShouldThrowException_WhenIdIsCorrectButNotInDatabase_AndUserIsCorrect(long id){
             //given
             User userUpdate = new User("UpdatedUser");
             //when
-            controller.update(id, userUpdate);
+            assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
 
         }
+
 
         @ParameterizedTest
         @ValueSource(longs = {Integer.MIN_VALUE, -1})
-        public void update_WithId_Negative(long id) throws SQLException {
-            //given
-            User userUpdate = new User("UpdatedUser");
-            //when, then
-            assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
-        }
-
-        @ParameterizedTest
-        @ValueSource(longs = {Integer.MIN_VALUE, Integer.MAX_VALUE})
-        public void update_WithId_MAX_INTEGER_And_MIN_INTEGER(long id) throws SQLException {
+        public void update_ShouldThrowException_WhenIdIsNegative_AndUserIsCorrect(long id){
             //given
             User userUpdate = new User("UpdatedUser");
             //when, then
@@ -155,27 +150,71 @@ class CrudControllerTest {
 
         @ParameterizedTest
         @ValueSource(longs = {1})
-        public void update_WithUser_Incorrect(long id) throws SQLException {
+        public void update_ShouldThrowException_WhenIdIsCorrect_AndUserIsNull(long id){
             User userUpdate = null;
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
 
         @ParameterizedTest
         @ValueSource(strings = {" ", "\t", "\b", "\n"})
-        public void update_WithUser_Name_Incorrect(String username) throws SQLException {
+        public void update_ShouldThrowException_WhenIdIsCorrect_AndUserIsWhitespace(String username){
             long id = 1;
             User userUpdate = new User(username);
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
 
-        @Test
-        public void update_WithUser_Incorrect_Id_Correct() {
-
+        @ParameterizedTest
+        @ValueSource(longs = {Integer.MIN_VALUE, -1})
+        public void update_ShouldThrowException_WhenIdIsNegative_AndUserIsNull(long id){
+            //given
+            User userUpdate = null;
+            //when, then
+            assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
 
-        @Test
-        public void update_WithUser_Correct_Id_Correct() {
+        @ParameterizedTest
+        @ValueSource(longs = {100, Integer.MAX_VALUE})
+        public void update_ShouldThrowException_WhenIdIsCorrectButNotInDatabase_AndUserIsNull(long id){
+            //given
+            User userUpdate = null;
+            //when, then
+            assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
+        }
 
+        @ParameterizedTest
+        @MethodSource("provideParametersForIdNegative")
+        public void update_ShoudlThrowException_WhenIdIsNegative_AndUserIsWhitespace(String username, long id){
+            User userUpdate = new User(username);
+            assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
+        }
+
+        @ParameterizedTest
+        @MethodSource("provideParametersForIdCorrectButNotInDatabase")
+        public void update_ShouldThrowException_WhenIdIsCorrectButNotInDatabase_AndUserIsWhitespace(String username, long id){
+            User userUpdate = new User(username);
+            assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
+        }
+
+        private static Stream<Arguments> provideParametersForIdNegative() {
+            return Stream.of(
+                    Arguments.of(" ", Integer.MIN_VALUE),
+                    Arguments.of("\t", Integer.MIN_VALUE),
+                    Arguments.of("\n", Integer.MIN_VALUE),
+                    Arguments.of(" ", -1),
+                    Arguments.of("\t", -1),
+                    Arguments.of("\n", -1)
+            );
+        }
+
+        private static Stream<Arguments> provideParametersForIdCorrectButNotInDatabase() {
+            return Stream.of(
+                    Arguments.of(" ", Integer.MAX_VALUE),
+                    Arguments.of("\t", Integer.MAX_VALUE),
+                    Arguments.of("\n", Integer.MAX_VALUE),
+                    Arguments.of(" ", 100),
+                    Arguments.of("\t", 100),
+                    Arguments.of("\n", 100)
+            );
         }
     }
     // wg olszewskiego powinno być tych testów ( gdzie test dla danego parametru liczy się jako pojedynczy test)
