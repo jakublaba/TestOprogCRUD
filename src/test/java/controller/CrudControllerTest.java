@@ -182,7 +182,7 @@ class CrudControllerTest {
 
         @ParameterizedTest
         @MethodSource("provideParametersForIdNegative")
-        public void update_ShoudlThrowException_WhenIdIsNegative_AndUserIsWhitespace(String username, long id){
+        public void update_ShouldThrowException_WhenIdIsNegative_AndUserIsWhitespace(String username, long id){
             User userUpdate = new User(username);
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
