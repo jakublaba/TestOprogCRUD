@@ -15,7 +15,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.postgresql.util.PSQLException;
 
 import java.sql.SQLException;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -87,6 +86,7 @@ class CrudControllerTest {
         @MethodSource("incorrectUserGenerator")
         void create_shouldThrowException_whenUserInvalidByAppLogicStandard(User user) {
             val expectedMessage = "Username must not be blank.";
+            
             Exception e = assertThrows(IllegalArgumentException.class,() -> controller.create(user));
 
             val resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
@@ -289,49 +289,57 @@ class CrudControllerTest {
 
     }
 
-    // TODO#12: Parameterized tests with a few more test cases
     @Nested
     class Delete {
 
         @SneakyThrows
-        @Test
-         void delete_WithId_Existing() {
+        @ParameterizedTest
+        @ValueSource(longs = {1, 9})
+         void delete_ShouldDeleteUserSuccessfully_WhenUserWithIdExists(long idOfExistingUser) {
             // given an id that is in the database
-            final long idOfExistingUser = 10;
 
             // when
             assertDoesNotThrow(() -> controller.delete(idOfExistingUser));
 
             // then
-            final var resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME + " WHERE id = " + idOfExistingUser);
+            final var resultingTable = connection.createQueryTable(TABLE_NAME,
+                    "SELECT * FROM " + TABLE_NAME + " WHERE id = " + idOfExistingUser);
 
             Assertions.assertThat(resultingTable.getRowCount())
                     .isEqualTo(0);
         }
 
         @SneakyThrows
-        @Test
-         void delete_WithId_Nonexistent() {
+        @ParameterizedTest
+        @ValueSource(longs = {10, Integer.MAX_VALUE})
+         void delete_ShouldNotDeleteAnyUsers_WhenUserWithIdDoesNotExist(long idOfNonexistentUser) {
             // given that a user of this id does not exist
-            final long idOfNonexistentUser = 2147483647;
 
             // when
             assertDoesNotThrow(() -> controller.delete(idOfNonexistentUser));
 
             // then
-            final var resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
-
+            final var resultingTable = connection.createQueryTable(TABLE_NAME,
+                    "SELECT * FROM " + TABLE_NAME);
             Assertions.assertThat(resultingTable.getRowCount())
                     .isEqualTo(userTable.getRowCount());
         }
 
-        @Test
-         void delete_WithId_Negative() {
-            // given that a user of this id does not exist
-            final long idOfNonexistentUser = -1;
+        @SneakyThrows
+        @ParameterizedTest
+        @ValueSource(longs = {Integer.MIN_VALUE, -1, 0})
+         void delete_ShouldThrowException_AndNotDeleteUsers_WhenUserIdIsSmallerThanOne(long idOfNonexistentUser) {
+            // given that a user of this id is illegal
 
-            // when, then
+            // when deleting
+            // then should throw exception
             assertThrows(IllegalArgumentException.class, () -> controller.delete(idOfNonexistentUser));
+
+            // and then
+            final var resultingTable = connection.createQueryTable(TABLE_NAME,
+                    "SELECT * FROM " + TABLE_NAME);
+            Assertions.assertThat(resultingTable.getRowCount())
+                    .isEqualTo(userTable.getRowCount());
         }
     }
 
