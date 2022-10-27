@@ -3,7 +3,6 @@ package controller;
 import lombok.SneakyThrows;
 import lombok.val;
 import model.User;
-import org.assertj.core.api.Assertions;
 import org.dbunit.database.IDatabaseConnection;
 import org.dbunit.dataset.ITable;
 import org.junit.jupiter.api.*;
@@ -16,6 +15,7 @@ import org.postgresql.util.PSQLException;
 
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -196,11 +196,12 @@ class CrudControllerTest {
 
         @ParameterizedTest
         @ValueSource(longs = {Integer.MIN_VALUE, -1, 0})
-        public void update_ShouldThrowException_WhenIdIsNegative_AndUserIsCorrect(long id){
+        public void update_ShouldThrowException_WhenIdIsNegative_AndUserIsCorrect(long id) {
             User userUpdate = new User("UpdatedUser");
 
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
+
         @ParameterizedTest
         @ValueSource(longs = {1, 9})
         public void update_ShouldThrowException_WhenIdIsCorrect_AndUserIsNull(long id){
@@ -211,7 +212,7 @@ class CrudControllerTest {
 
         @ParameterizedTest
         @ValueSource(strings = {"", " ", "\t", "\n", "\r", "\b"})
-        public void update_ShouldThrowException_WhenIdIsCorrect_AndUserIsWhitespace(String username){
+        public void update_ShouldThrowException_WhenIdIsCorrect_AndUserIsWhitespace(String username) {
             long id = 1;
             User userUpdate = new User(username);
 
@@ -228,7 +229,7 @@ class CrudControllerTest {
 
         @ParameterizedTest
         @ValueSource(longs = {10, Integer.MAX_VALUE})
-        public void update_ShouldThrowException_WhenIdIsCorrectButNotInDatabase_AndUserIsNull(long id){
+        public void update_ShouldThrowException_WhenIdIsCorrectButNotInDatabase_AndUserIsNull(long id) {
             User userUpdate = null;
 
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
@@ -236,7 +237,7 @@ class CrudControllerTest {
         
         @ParameterizedTest
         @MethodSource("provideParametersForIdNegative")
-        public void update_ShouldThrowException_WhenIdIsNegative_AndUserIsWhitespace(String username, long id){
+        public void update_ShouldThrowException_WhenIdIsNegative_AndUserIsWhitespace(String username, long id) {
             User userUpdate = new User(username);
 
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
@@ -244,7 +245,7 @@ class CrudControllerTest {
         
         @ParameterizedTest
         @MethodSource("provideParametersForIdCorrectButNotInDatabase")
-        public void update_ShouldThrowException_WhenIdIsCorrectButNotInDatabase_AndUserIsWhitespace(String username, long id){
+        public void update_ShouldThrowException_WhenIdIsCorrectButNotInDatabase_AndUserIsWhitespace(String username, long id) {
             User userUpdate = new User(username);
 
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
@@ -281,50 +282,33 @@ class CrudControllerTest {
         @ParameterizedTest
         @ValueSource(longs = {1, 9})
          void delete_ShouldDeleteUserSuccessfully_WhenUserWithIdExists(long idOfExistingUser) {
-            // given an id that is in the database
-
-            // when
             assertDoesNotThrow(() -> controller.delete(idOfExistingUser));
 
-            // then
-            final var resultingTable = connection.createQueryTable(TABLE_NAME,
+            val resultingTable = connection.createQueryTable(TABLE_NAME,
                     "SELECT * FROM " + TABLE_NAME + " WHERE id = " + idOfExistingUser);
 
-            Assertions.assertThat(resultingTable.getRowCount())
-                    .isEqualTo(0);
+            assertThat(resultingTable.getRowCount()).isEqualTo(0);
         }
 
         @SneakyThrows
         @ParameterizedTest
         @ValueSource(longs = {10, Integer.MAX_VALUE})
          void delete_ShouldNotDeleteAnyUsers_WhenUserWithIdDoesNotExist(long idOfNonexistentUser) {
-            // given that a user of this id does not exist
-
-            // when
             assertDoesNotThrow(() -> controller.delete(idOfNonexistentUser));
 
-            // then
-            final var resultingTable = connection.createQueryTable(TABLE_NAME,
-                    "SELECT * FROM " + TABLE_NAME);
-            Assertions.assertThat(resultingTable.getRowCount())
-                    .isEqualTo(userTable.getRowCount());
+            val resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
+
+            assertThat(resultingTable.getRowCount()).isEqualTo(userTable.getRowCount());
         }
 
         @SneakyThrows
         @ParameterizedTest
         @ValueSource(longs = {Integer.MIN_VALUE, -1, 0})
          void delete_ShouldThrowException_AndNotDeleteUsers_WhenUserIdIsSmallerThanOne(long idOfNonexistentUser) {
-            // given that a user of this id is illegal
-
-            // when deleting
-            // then should throw exception
             assertThrows(IllegalArgumentException.class, () -> controller.delete(idOfNonexistentUser));
 
-            // and then
-            final var resultingTable = connection.createQueryTable(TABLE_NAME,
-                    "SELECT * FROM " + TABLE_NAME);
-            Assertions.assertThat(resultingTable.getRowCount())
-                    .isEqualTo(userTable.getRowCount());
+            val resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
+            assertThat(resultingTable.getRowCount()).isEqualTo(userTable.getRowCount());
         }
     }
 
