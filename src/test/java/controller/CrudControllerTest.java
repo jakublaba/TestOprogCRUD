@@ -5,16 +5,14 @@ import lombok.val;
 import model.User;
 import org.assertj.core.api.Assertions;
 import org.dbunit.database.IDatabaseConnection;
-import org.dbunit.dataset.DataSetException;
 import org.dbunit.dataset.ITable;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.postgresql.util.PSQLException;
-
-import java.util.stream.Stream;
 
 import java.sql.SQLException;
 import java.util.stream.Stream;
@@ -31,7 +29,6 @@ class CrudControllerTest {
     private ITable userTable;
     private CRUD<User> controller;
     private IDatabaseConnection connection;
-
     private DatabaseTestConfigurator databaseTestConfigurator;
 
 
@@ -54,95 +51,81 @@ class CrudControllerTest {
     }
 
     @AfterAll
-    void tearDown() throws Exception {
+    void tearDown() throws SQLException {
         connection.close();
     }
 
     @Nested
     class Create {
-        @ParameterizedTest
-        @SneakyThrows
-        @MethodSource("correctUserGenerator")
-        void create_shouldAddNewEntry_whenUserValid(User user) throws Exception {
-            // when given a user with correct name
 
-            //when
+        @SneakyThrows
+        @ParameterizedTest
+        @MethodSource("correctUserGenerator")
+        void create_shouldAddNewEntry_whenUserValid(User user) {
             assertDoesNotThrow(() -> controller.create(user));
 
-            //then
-            ITable resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
+            val resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
             assertEquals(userTable.getRowCount() + 1, resultingTable.getRowCount());
         }
 
-        @ParameterizedTest
         @SneakyThrows
+        @ParameterizedTest
         @MethodSource("incorrectUserGeneratorPsqlManaged")
         void create_shouldThrowException_whenUserInvalidBySqlStandard(User user) {
-            //when given an incorrect user
-
-            //when
             assertThrows(PSQLException.class,() -> controller.create(user));
 
-            //then
-            ITable resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
+            val resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
             assertEquals(userTable.getRowCount(), resultingTable.getRowCount());
 
         }
-        @ParameterizedTest
-        @SneakyThrows
-        @MethodSource("incorrectUserGenerator")
-        void create_shouldThrowException_whenUserInvalidByAppLogicStandard(User user) throws Exception {
-            // when given a user with correct name
 
-            //when
+        @SneakyThrows
+        @ParameterizedTest
+        @MethodSource("incorrectUserGenerator")
+        void create_shouldThrowException_whenUserInvalidByAppLogicStandard(User user) {
+            val expectedMessage = "Username must not be blank.";
             Exception e = assertThrows(IllegalArgumentException.class,() -> controller.create(user));
 
-            //then
-            ITable resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
+            val resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
             assertEquals(userTable.getRowCount() , resultingTable.getRowCount());
-            assertEquals("Username must not be blank.",e.getMessage());
+            assertEquals(expectedMessage, e.getMessage());
         }
-        @Test
-        @SneakyThrows
-        void create_shouldThrowException_whenUserNull()
-        {
-            // when given a user with correct name
-            User user = null;
 
-            //when
+        @SneakyThrows
+        @ParameterizedTest
+        @NullSource
+        void create_shouldThrowException_whenUserNull(User user) {
             assertThrows(NullPointerException.class,() -> controller.create(user));
 
-            //then
-            ITable resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
+            val resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
             assertEquals(userTable.getRowCount(), resultingTable.getRowCount());
         }
+
         private static Stream<Arguments> incorrectUserGeneratorPsqlManaged() {
-
             return Stream.of(
-                    Arguments.of(new User("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
-                    Arguments.of(new User("\0"))
-                    );
-        }
-        private static Stream<Arguments> correctUserGenerator() {
-
-            return Stream.of(
-                    Arguments.of(new User("Krabelard")),
-                    Arguments.of(new User("Zażółć gęślą jaźń")),
-                    Arguments.of(new User("TEST")),
-                    Arguments.of(new User("SELECT * FROM users")),
-                    Arguments.of(new User("null"))
-
+                Arguments.of(new User("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
+                Arguments.of(new User("\0"))
             );
         }
-        private static Stream<Arguments> incorrectUserGenerator()
-        {
+
+        private static Stream<Arguments> correctUserGenerator() {
             return Stream.of(
-                    Arguments.of(new User(" ")),
-                    Arguments.of(new User("")),
-                    Arguments.of(new User("\n")),
-                    Arguments.of(new User("\t")),
-                    Arguments.of(new User("\r")),
-                    Arguments.of(new User("\f"))
+                Arguments.of(new User("Krabelard")),
+                Arguments.of(new User("Zażółć gęślą jaźń")),
+                Arguments.of(new User("TEST")),
+                Arguments.of(new User("SELECT * FROM users")),
+                Arguments.of(new User("null"))
+            );
+        }
+
+        private static Stream<Arguments> incorrectUserGenerator() {
+            return Stream.of(
+                Arguments.of(new User(" ")),
+                Arguments.of(new User("")),
+                Arguments.of(new User("\n")),
+                Arguments.of(new User("\t")),
+                Arguments.of(new User("\r")),
+                Arguments.of(new User("\f"))
             );
         }
 
@@ -167,9 +150,10 @@ class CrudControllerTest {
         @ValueSource(longs = {1, 2, 3, 4, 5, 6, 7, 8, 9})
         void read_shouldReturnNonEmptyOptional_whenIdValid(long id) {
             val expectedUser = new User((String) userTable.getValue((int) id - 1 ,"username"));
-
             assertDoesNotThrow(() -> controller.read(id));
+
             val readResult = controller.read(id);
+
             assertTrue(readResult.isPresent());
             assertEquals(expectedUser, readResult.get());
         }
@@ -180,7 +164,9 @@ class CrudControllerTest {
         @ValueSource(longs = {10, Integer.MAX_VALUE})
         void read_shouldReturnEmptyOptional_whenIdNotInDatabase(long id) {
             assertDoesNotThrow(() -> controller.read(id));
+
             val readResult = controller.read(id);
+
             assertTrue(readResult.isEmpty());
         }
     }
@@ -188,14 +174,14 @@ class CrudControllerTest {
     @Nested
     class Update {
 
+        @SneakyThrows
         @ParameterizedTest
         @ValueSource(longs = {1, 2, 3, 4, 5, 6, 7, 8, 9})
-        public void update_ShouldUpdateUser_WhenIdIsInDatabase_AndUserIsCorrect(long id) throws DataSetException, SQLException {
-            //given
-            User userUpdate = new User("UpdatedUser");
-            //when
+        public void update_ShouldUpdateUser_WhenIdIsInDatabase_AndUserIsCorrect(long id) {
+            val userUpdate = new User("UpdatedUser");
+
             assertDoesNotThrow(() -> controller.update(id, userUpdate));
-            //then
+
             ITable resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME +" WHERE id="+ id);
             assertEquals("UpdatedUser", resultingTable.getValue(0, "username"));
 
@@ -203,58 +189,58 @@ class CrudControllerTest {
 
         @ParameterizedTest
         @ValueSource(longs = {100, Integer.MAX_VALUE})
-        public void update_ShouldThrowException_WhenIdIsCorrectButNotInDatabase_AndUserIsCorrect(long id){
-            //given
-            User userUpdate = new User("UpdatedUser");
-            //when
+        public void update_ShouldThrowException_WhenIdIsCorrectButNotInDatabase_AndUserIsCorrect(long id) {
+            val userUpdate = new User("UpdatedUser");
+
             assertDoesNotThrow(() -> controller.update(id, userUpdate));
         }
 
         @ParameterizedTest
         @ValueSource(longs = {Integer.MIN_VALUE, -1})
-        public void update_ShouldThrowException_WhenIdIsNegative_AndUserIsCorrect(long id){
-            //given
-            User userUpdate = new User("UpdatedUser");
-            //when, then
+        public void update_ShouldThrowException_WhenIdIsNegative_AndUserIsCorrect(long id) {
+            val userUpdate = new User("UpdatedUser");
+
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
+
         @ParameterizedTest
-        @ValueSource(longs = {1})
-        public void update_ShouldThrowException_WhenIdIsCorrect_AndUserIsNull(long id){
+        @ValueSource(longs = {1, 2, 3, 4, 5, 6, 7, 8, 9})
+        public void update_ShouldThrowException_WhenIdIsCorrect_AndUserIsNull(long id) {
             User userUpdate = null;
+
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
 
         @ParameterizedTest
         @ValueSource(strings = {" ", "\t", "\n"})
-        public void update_ShouldThrowException_WhenIdIsCorrect_AndUserIsWhitespace(String username){
+        public void update_ShouldThrowException_WhenIdIsCorrect_AndUserIsWhitespace(String username) {
             long id = 1;
             User userUpdate = new User(username);
+
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
 
         @ParameterizedTest
         @ValueSource(longs = {Integer.MIN_VALUE, -1})
-        public void update_ShouldThrowException_WhenIdIsNegative_AndUserIsNull(long id){
-            //given
+        public void update_ShouldThrowException_WhenIdIsNegative_AndUserIsNull(long id) {
             User userUpdate = null;
-            //when, then
+
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
 
         @ParameterizedTest
         @ValueSource(longs = {100, Integer.MAX_VALUE})
-        public void update_ShouldThrowException_WhenIdIsCorrectButNotInDatabase_AndUserIsNull(long id){
-            //given
+        public void update_ShouldThrowException_WhenIdIsCorrectButNotInDatabase_AndUserIsNull(long id) {
             User userUpdate = null;
-            //when, then
+
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
         
         @ParameterizedTest
         @MethodSource("provideParametersForIdNegative")
-        public void update_ShouldThrowException_WhenIdIsNegative_AndUserIsWhitespace(String username, long id){
+        public void update_ShouldThrowException_WhenIdIsNegative_AndUserIsWhitespace(String username, long id) {
             User userUpdate = new User(username);
+
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
         
@@ -262,33 +248,33 @@ class CrudControllerTest {
         @MethodSource("provideParametersForIdCorrectButNotInDatabase")
         public void update_ShouldThrowException_WhenIdIsCorrectButNotInDatabase_AndUserIsWhitespace(String username, long id){
             User userUpdate = new User(username);
+
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
         
         private static Stream<Arguments> provideParametersForIdNegative() {
             return Stream.of(
-                    Arguments.of(" ", Integer.MIN_VALUE),
-                    Arguments.of("\t", Integer.MIN_VALUE),
-                    Arguments.of("\n", Integer.MIN_VALUE),
-                    Arguments.of(" ", -1),
-                    Arguments.of("\t", -1),
-                    Arguments.of("\n", -1)
+                Arguments.of(" ", Integer.MIN_VALUE),
+                Arguments.of("\t", Integer.MIN_VALUE),
+                Arguments.of("\n", Integer.MIN_VALUE),
+                Arguments.of(" ", -1),
+                Arguments.of("\t", -1),
+                Arguments.of("\n", -1)
             );
         }
 
         private static Stream<Arguments> provideParametersForIdCorrectButNotInDatabase() {
             return Stream.of(
-                    Arguments.of(" ", Integer.MAX_VALUE),
-                    Arguments.of("\t", Integer.MAX_VALUE),
-                    Arguments.of("\n", Integer.MAX_VALUE),
-                    Arguments.of(" ", 100),
-                    Arguments.of("\t", 100),
-                    Arguments.of("\n", 100)
+                Arguments.of(" ", Integer.MAX_VALUE),
+                Arguments.of("\t", Integer.MAX_VALUE),
+                Arguments.of("\n", Integer.MAX_VALUE),
+                Arguments.of(" ", 100),
+                Arguments.of("\t", 100),
+                Arguments.of("\n", 100)
             );
         }
+
     }
-    // wg olszewskiego powinno być tych testów ( gdzie test dla danego parametru liczy się jako pojedynczy test)
-    // powinno być 4 * 4, wszystkie możliwe kombinacje dla złego id i złęgo usera
 
     // TODO#12: Parameterized tests with a few more test cases
     @Nested
