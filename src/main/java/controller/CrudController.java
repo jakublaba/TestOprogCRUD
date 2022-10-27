@@ -52,6 +52,13 @@ public class CrudController implements CRUD<User> {
 
     @Override
     public void update(long id, User newRecord) throws SQLException {
+        if (newRecord == null){
+            throw new IllegalArgumentException("User must not be null");
+        }
+        if (id <= 0) {
+            throw new IllegalArgumentException("User id must be positive");
+        }
+
         val sql =
             """
             UPDATE users

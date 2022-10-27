@@ -5,6 +5,7 @@ import lombok.val;
 import model.User;
 import org.assertj.core.api.Assertions;
 import org.dbunit.database.IDatabaseConnection;
+import org.dbunit.dataset.DataSetException;
 import org.dbunit.dataset.ITable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -15,6 +16,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+
+import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -109,34 +112,60 @@ class CrudControllerTest {
     class Update {
 
 
-        @Test
-        public void update_WithId_Existing() {
+        @ParameterizedTest
+        @ValueSource(longs = {1, 2, 3, 4, 5, 6, 7, 8, 9})
+        public void update_WithId_Existing(long id) throws DataSetException, SQLException {
+            //given
+            User userUpdate = new User("UpdatedUser");
+            //when
+            assertDoesNotThrow(() -> controller.update(id, userUpdate));
+            //then
+            ITable resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME +" WHERE id="+ id);
+            assertEquals("UpdatedUser", resultingTable.getValue(0, "username"));
 
         }
 
-        @Test
-        public void update_WithId_Nonexistent() {
+        @ParameterizedTest
+        @ValueSource(longs = {100, Integer.MAX_VALUE})
+        public void update_WithId_Nonexistent(long id) throws SQLException {
+            //given
+            User userUpdate = new User("UpdatedUser");
+            //when
+            controller.update(id, userUpdate);
 
         }
 
-        @Test
-        public void update_WithId_Negative() {
-
+        @ParameterizedTest
+        @ValueSource(longs = {Integer.MIN_VALUE, -1})
+        public void update_WithId_Negative(long id) throws SQLException {
+            //given
+            User userUpdate = new User("UpdatedUser");
+            //when, then
+            assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
 
-        @Test
-        public void update_WithId_MAX_INTEGER_And_MIN_INTEGER() {
-
+        @ParameterizedTest
+        @ValueSource(longs = {Integer.MIN_VALUE, Integer.MAX_VALUE})
+        public void update_WithId_MAX_INTEGER_And_MIN_INTEGER(long id) throws SQLException {
+            //given
+            User userUpdate = new User("UpdatedUser");
+            //when, then
+            assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
 
-        @Test
-        public void update_WithUser_Incorrect() {
-
+        @ParameterizedTest
+        @ValueSource(longs = {1})
+        public void update_WithUser_Incorrect(long id) throws SQLException {
+            User userUpdate = null;
+            assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
 
-        @Test
-        public void update_WithUser_Name_Incorrect() {
-
+        @ParameterizedTest
+        @ValueSource(strings = {" ", "\t", "\b", "\n"})
+        public void update_WithUser_Name_Incorrect(String username) throws SQLException {
+            long id = 1;
+            User userUpdate = new User(username);
+            assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
 
         @Test
