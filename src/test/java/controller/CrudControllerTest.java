@@ -6,13 +6,7 @@ import model.User;
 import org.assertj.core.api.Assertions;
 import org.dbunit.database.IDatabaseConnection;
 import org.dbunit.dataset.ITable;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -85,20 +79,35 @@ class CrudControllerTest {
 
     @Nested
     class Read {
-        @ParameterizedTest
-        @SneakyThrows
-        @ValueSource(longs = {1, 2, 3, 4, 5, 6, 7, 8, 9})
-        void read_shouldReturnNonEmptyOptional_whenIdValid(long id) {
-            assertDoesNotThrow(() -> controller.read(id));
-            val readResult = controller.read(id);
-            assertTrue(readResult.isPresent());
-            assertEquals(userTable.getValue((int) id - 1 ,"username"), readResult.get().username());
+
+        @ParameterizedTest(name = "{index} -> id={0}")
+        @DisplayName("CrudController#read - should throw IllegalArgumentException for id <= 0")
+        @ValueSource(longs = {Integer.MIN_VALUE, -1, 0})
+        void read_shouldThrow_whenIdInvalid(long id) {
+            val expectedMessage = "id must be greater than 0";
+
+            Exception e = assertThrows(IllegalArgumentException.class, () -> controller.read(id));
+            assertEquals(expectedMessage, e.getMessage());
         }
 
         @SneakyThrows
-        @ParameterizedTest
-        @ValueSource(longs = {Integer.MIN_VALUE, 0, Integer.MAX_VALUE})
-        void read_shouldReturnEmptyOptional_whenIdInvalid(long id) {
+        @ParameterizedTest(name = "{index} -> id={0}")
+        @DisplayName("CrudController#read - should return Optional of given User for id between 1 and 9 (inclusive)")
+        @ValueSource(longs = {1, 2, 3, 4, 5, 6, 7, 8, 9})
+        void read_shouldReturnNonEmptyOptional_whenIdValid(long id) {
+            val expectedUser = new User((String) userTable.getValue((int) id - 1 ,"username"));
+
+            assertDoesNotThrow(() -> controller.read(id));
+            val readResult = controller.read(id);
+            assertTrue(readResult.isPresent());
+            assertEquals(expectedUser, readResult.get());
+        }
+
+        @SneakyThrows
+        @ParameterizedTest(name = "{index} -> id={0}")
+        @DisplayName("CrudController#read - should return Optional.empty() for id >= 10")
+        @ValueSource(longs = {10, Integer.MAX_VALUE})
+        void read_shouldReturnEmptyOptional_whenIdNotInDatabase(long id) {
             assertDoesNotThrow(() -> controller.read(id));
             val readResult = controller.read(id);
             assertTrue(readResult.isEmpty());
