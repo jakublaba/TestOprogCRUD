@@ -5,7 +5,6 @@ import lombok.val;
 import model.User;
 import org.assertj.core.api.Assertions;
 import org.dbunit.database.IDatabaseConnection;
-import org.dbunit.dataset.DataSetException;
 import org.dbunit.dataset.ITable;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -16,8 +15,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.postgresql.util.PSQLException;
 
 import java.util.stream.Stream;
-
-import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -148,7 +145,7 @@ class CrudControllerTest {
         @SneakyThrows
         @ParameterizedTest(name = "{index} -> id={0}")
         @DisplayName("CrudController#read - should return Optional of given User for id between 1 and 9 (inclusive)")
-        @ValueSource(longs = {1, 2, 3, 4, 5, 6, 7, 8, 9})
+        @ValueSource(longs = {1, 9})
         void read_shouldReturnNonEmptyOptional_whenIdValid(long id) {
             val expectedUser = new User((String) userTable.getValue((int) id - 1 ,"username"));
 
@@ -178,7 +175,7 @@ class CrudControllerTest {
 
         @SneakyThrows
         @ParameterizedTest
-        @ValueSource(longs = {1, 2, 3, 4, 5, 6, 7, 8, 9})
+        @ValueSource(longs = {1, 9})
         public void update_ShouldUpdateUser_WhenIdIsInDatabase_AndUserIsCorrect(long id) {
             User userUpdate = new User("UpdatedUser");
 
@@ -190,7 +187,7 @@ class CrudControllerTest {
         }
 
         @ParameterizedTest
-        @ValueSource(longs = {100, Integer.MAX_VALUE})
+        @ValueSource(longs = {10, Integer.MAX_VALUE})
         public void update_ShouldThrowException_WhenIdIsCorrectButNotInDatabase_AndUserIsCorrect(long id){
             User userUpdate = new User("UpdatedUser");
 
@@ -205,7 +202,7 @@ class CrudControllerTest {
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
         @ParameterizedTest
-        @ValueSource(longs = {1, 2, 3, 4, 5, 6, 7, 8, 9})
+        @ValueSource(longs = {1, 9})
         public void update_ShouldThrowException_WhenIdIsCorrect_AndUserIsNull(long id){
             User userUpdate = null;
 
@@ -213,7 +210,7 @@ class CrudControllerTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {" ", "\t", "\n"})
+        @ValueSource(strings = {"", " ", "\t", "\n", "\r", "\b"})
         public void update_ShouldThrowException_WhenIdIsCorrect_AndUserIsWhitespace(String username){
             long id = 1;
             User userUpdate = new User(username);
@@ -222,7 +219,7 @@ class CrudControllerTest {
         }
 
         @ParameterizedTest
-        @ValueSource(longs = {Integer.MIN_VALUE, -1})
+        @ValueSource(longs = {Integer.MIN_VALUE, -1, 0})
         public void update_ShouldThrowException_WhenIdIsNegative_AndUserIsNull(long id){
             User userUpdate = null;
 
@@ -230,7 +227,7 @@ class CrudControllerTest {
         }
 
         @ParameterizedTest
-        @ValueSource(longs = {100, Integer.MAX_VALUE})
+        @ValueSource(longs = {10, Integer.MAX_VALUE})
         public void update_ShouldThrowException_WhenIdIsCorrectButNotInDatabase_AndUserIsNull(long id){
             User userUpdate = null;
 
