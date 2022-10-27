@@ -14,7 +14,12 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.postgresql.util.PSQLException;
+
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,6 +35,14 @@ class CrudControllerTest {
     private IDatabaseConnection connection;
 
     private DatabaseTestConfigurator databaseTestConfigurator;
+    private final static String USERNAME_WITH_32_CHARS = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    private final static String USER_THAT_ALREADY_EXISTS = "Krabelard";
+    private final static String ALL_POLISH_SIGNS = "Zażółć gęślą jaźń";
+    public static final String CORRECT_USERNAME = "TEST";
+    public static final String SQL_INJECTION = "SELECT * FROM users";
+    public static final String NULL_LITERAL = "null";
+    public static final String EXPECTED_ARGUMENT_EXCEPTION_MSG = "Username must not be blank.";
+
 
     @BeforeAll
     void setup() {
@@ -56,31 +69,90 @@ class CrudControllerTest {
 
     @Nested
     class Create {
+        @ParameterizedTest
+        @SneakyThrows
+        @MethodSource("correctUserGenerator")
+        void create_WithUser_Correct(User user) throws Exception {
+            // when given a user with correct name
 
-        @Test
-        public void create_WithUser_Correct() throws Exception {
-            User correctUser = new User("Test");
-            controller.create(correctUser);
+            //when
+            assertDoesNotThrow(() -> controller.create(user));
 
+            //then
             ITable resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
-
             assertEquals(userTable.getRowCount() + 1, resultingTable.getRowCount());
         }
 
-        @Test
-        public void create_WithUser_Null() {
+        @ParameterizedTest
+        @SneakyThrows
+        @MethodSource("incorrectUserGeneratorPsqlManaged")
+        void create_WithUser_Incorrect_PsqlManaged(User user) {
+            //when given an incorrect user
+
+            //when
+            assertThrows(PSQLException.class,() -> controller.create(user));
+
+            //then
+            ITable resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
+            assertEquals(userTable.getRowCount(), resultingTable.getRowCount());
 
         }
+        @ParameterizedTest
+        @SneakyThrows
+        @MethodSource("incorrectUserGenerator")
+        void create_WithUser_Incorrect(User user) throws Exception {
+            // when given a user with correct name
 
+            //when
+            Exception e = assertThrows(IllegalArgumentException.class,() -> controller.create(user));
+
+            //then
+            ITable resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
+            assertEquals(userTable.getRowCount() , resultingTable.getRowCount());
+            assertEquals(EXPECTED_ARGUMENT_EXCEPTION_MSG,e.getMessage());
+        }
         @Test
-        public void create_WithUser_Name_Null() {
+        @SneakyThrows
+        void create_WithUser_Null()
+        {
+            // when given a user with correct name
+            User user = null;
 
+
+            assertThrows(NullPointerException.class,() -> controller.create(user));
+
+            //then
+            ITable resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME);
+            assertEquals(userTable.getRowCount(), resultingTable.getRowCount());
+        }
+        private static Stream<Arguments> incorrectUserGeneratorPsqlManaged() {
+
+            return Stream.of(
+                    Arguments.of(new User(USERNAME_WITH_32_CHARS)),
+                    Arguments.of(new User("\0")),
+                    Arguments.of(new User(null))
+                    );
+        }
+        private static Stream<Arguments> correctUserGenerator() {
+
+            return Stream.of(
+                    Arguments.of(new User(CORRECT_USERNAME)),
+                    Arguments.of(new User(SQL_INJECTION)),
+                    Arguments.of(new User(NULL_LITERAL)),
+                    Arguments.of(new User(USER_THAT_ALREADY_EXISTS)),
+                    Arguments.of(new User(ALL_POLISH_SIGNS))
+
+            );
+        }
+        private static Stream<Arguments> incorrectUserGenerator()
+        {
+            return Stream.of(
+                    Arguments.of(new User(" ")),
+                    Arguments.of(new User("\n")),
+                    Arguments.of(new User("\t"))
+            );
         }
 
-        @Test
-        public void create_WithUser_Name_SqlInjection() {
-
-        }
     }
 
     @Nested
@@ -110,42 +182,42 @@ class CrudControllerTest {
 
 
         @Test
-        public void update_WithId_Existing() {
+        void update_WithId_Existing() {
 
         }
 
         @Test
-        public void update_WithId_Nonexistent() {
+        void update_WithId_Nonexistent() {
 
         }
 
         @Test
-        public void update_WithId_Negative() {
+        void update_WithId_Negative() {
 
         }
 
         @Test
-        public void update_WithId_MAX_INTEGER_And_MIN_INTEGER() {
+        void update_WithId_MAX_INTEGER_And_MIN_INTEGER() {
 
         }
 
         @Test
-        public void update_WithUser_Incorrect() {
+         void update_WithUser_Incorrect() {
 
         }
 
         @Test
-        public void update_WithUser_Name_Incorrect() {
+         void update_WithUser_Name_Incorrect() {
 
         }
 
         @Test
-        public void update_WithUser_Incorrect_Id_Correct() {
+         void update_WithUser_Incorrect_Id_Correct() {
 
         }
 
         @Test
-        public void update_WithUser_Correct_Id_Correct() {
+         void update_WithUser_Correct_Id_Correct() {
 
         }
     }
@@ -158,7 +230,7 @@ class CrudControllerTest {
 
         @SneakyThrows
         @Test
-        public void delete_WithId_Existing() {
+         void delete_WithId_Existing() {
             // given an id that is in the database
             final long idOfExistingUser = 10;
 
@@ -174,7 +246,7 @@ class CrudControllerTest {
 
         @SneakyThrows
         @Test
-        public void delete_WithId_Nonexistent() {
+         void delete_WithId_Nonexistent() {
             // given that a user of this id does not exist
             final long idOfNonexistentUser = 2147483647;
 
@@ -189,7 +261,7 @@ class CrudControllerTest {
         }
 
         @Test
-        public void delete_WithId_Negative() {
+         void delete_WithId_Negative() {
             // given that a user of this id does not exist
             final long idOfNonexistentUser = -1;
 
