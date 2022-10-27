@@ -154,6 +154,7 @@ class CrudControllerTest {
 
             assertDoesNotThrow(() -> controller.read(id));
             val readResult = controller.read(id);
+
             assertTrue(readResult.isPresent());
             assertEquals(expectedUser, readResult.get());
         }
@@ -164,22 +165,25 @@ class CrudControllerTest {
         @ValueSource(longs = {10, Integer.MAX_VALUE})
         void read_shouldReturnEmptyOptional_whenIdNotInDatabase(long id) {
             assertDoesNotThrow(() -> controller.read(id));
+
             val readResult = controller.read(id);
+
             assertTrue(readResult.isEmpty());
         }
+
     }
 
     @Nested
     class Update {
 
+        @SneakyThrows
         @ParameterizedTest
         @ValueSource(longs = {1, 2, 3, 4, 5, 6, 7, 8, 9})
-        public void update_ShouldUpdateUser_WhenIdIsInDatabase_AndUserIsCorrect(long id) throws DataSetException, SQLException {
-            //given
+        public void update_ShouldUpdateUser_WhenIdIsInDatabase_AndUserIsCorrect(long id) {
             User userUpdate = new User("UpdatedUser");
-            //when
+
             assertDoesNotThrow(() -> controller.update(id, userUpdate));
-            //then
+
             ITable resultingTable = connection.createQueryTable(TABLE_NAME, "SELECT * FROM " + TABLE_NAME +" WHERE id="+ id);
             assertEquals("UpdatedUser", resultingTable.getValue(0, "username"));
 
@@ -188,24 +192,23 @@ class CrudControllerTest {
         @ParameterizedTest
         @ValueSource(longs = {100, Integer.MAX_VALUE})
         public void update_ShouldThrowException_WhenIdIsCorrectButNotInDatabase_AndUserIsCorrect(long id){
-            //given
             User userUpdate = new User("UpdatedUser");
-            //when
+
             assertDoesNotThrow(() -> controller.update(id, userUpdate));
         }
 
         @ParameterizedTest
-        @ValueSource(longs = {Integer.MIN_VALUE, -1})
+        @ValueSource(longs = {Integer.MIN_VALUE, -1, 0})
         public void update_ShouldThrowException_WhenIdIsNegative_AndUserIsCorrect(long id){
-            //given
             User userUpdate = new User("UpdatedUser");
-            //when, then
+
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
         @ParameterizedTest
-        @ValueSource(longs = {1})
+        @ValueSource(longs = {1, 2, 3, 4, 5, 6, 7, 8, 9})
         public void update_ShouldThrowException_WhenIdIsCorrect_AndUserIsNull(long id){
             User userUpdate = null;
+
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
 
@@ -214,24 +217,23 @@ class CrudControllerTest {
         public void update_ShouldThrowException_WhenIdIsCorrect_AndUserIsWhitespace(String username){
             long id = 1;
             User userUpdate = new User(username);
+
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
 
         @ParameterizedTest
         @ValueSource(longs = {Integer.MIN_VALUE, -1})
         public void update_ShouldThrowException_WhenIdIsNegative_AndUserIsNull(long id){
-            //given
             User userUpdate = null;
-            //when, then
+
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
 
         @ParameterizedTest
         @ValueSource(longs = {100, Integer.MAX_VALUE})
         public void update_ShouldThrowException_WhenIdIsCorrectButNotInDatabase_AndUserIsNull(long id){
-            //given
             User userUpdate = null;
-            //when, then
+
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
         
@@ -239,6 +241,7 @@ class CrudControllerTest {
         @MethodSource("provideParametersForIdNegative")
         public void update_ShouldThrowException_WhenIdIsNegative_AndUserIsWhitespace(String username, long id){
             User userUpdate = new User(username);
+
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
         
@@ -246,33 +249,33 @@ class CrudControllerTest {
         @MethodSource("provideParametersForIdCorrectButNotInDatabase")
         public void update_ShouldThrowException_WhenIdIsCorrectButNotInDatabase_AndUserIsWhitespace(String username, long id){
             User userUpdate = new User(username);
+
             assertThrows(IllegalArgumentException.class, () -> controller.update(id, userUpdate));
         }
         
         private static Stream<Arguments> provideParametersForIdNegative() {
             return Stream.of(
-                    Arguments.of(" ", Integer.MIN_VALUE),
-                    Arguments.of("\t", Integer.MIN_VALUE),
-                    Arguments.of("\n", Integer.MIN_VALUE),
-                    Arguments.of(" ", -1),
-                    Arguments.of("\t", -1),
-                    Arguments.of("\n", -1)
+                Arguments.of(" ", Integer.MIN_VALUE),
+                Arguments.of("\t", Integer.MIN_VALUE),
+                Arguments.of("\n", Integer.MIN_VALUE),
+                Arguments.of(" ", -1),
+                Arguments.of("\t", -1),
+                Arguments.of("\n", -1)
             );
         }
 
         private static Stream<Arguments> provideParametersForIdCorrectButNotInDatabase() {
             return Stream.of(
-                    Arguments.of(" ", Integer.MAX_VALUE),
-                    Arguments.of("\t", Integer.MAX_VALUE),
-                    Arguments.of("\n", Integer.MAX_VALUE),
-                    Arguments.of(" ", 100),
-                    Arguments.of("\t", 100),
-                    Arguments.of("\n", 100)
+                Arguments.of(" ", Integer.MAX_VALUE),
+                Arguments.of("\t", Integer.MAX_VALUE),
+                Arguments.of("\n", Integer.MAX_VALUE),
+                Arguments.of(" ", 100),
+                Arguments.of("\t", 100),
+                Arguments.of("\n", 100)
             );
         }
+
     }
-    // wg olszewskiego powinno być tych testów ( gdzie test dla danego parametru liczy się jako pojedynczy test)
-    // powinno być 4 * 4, wszystkie możliwe kombinacje dla złego id i złęgo usera
 
     @Nested
     class Delete {
