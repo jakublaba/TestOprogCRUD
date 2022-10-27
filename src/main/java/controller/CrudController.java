@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.util.Optional;
 
 public class CrudController implements CRUD<User> {
+
     private final DataSource dataSource;
 
     public CrudController(String url, String user, String password) {
@@ -22,8 +23,10 @@ public class CrudController implements CRUD<User> {
 
     @Override
     public void create(User record) throws SQLException {
-        if(record.username().isBlank())
+        if(record.username().isBlank()) {
             throw new IllegalArgumentException("Username must not be blank.");
+        }
+
         val sql = "INSERT INTO users VALUES(DEFAULT, ?)";
         try (
             val connection = dataSource.getConnection();
@@ -39,6 +42,7 @@ public class CrudController implements CRUD<User> {
         if (id <= 0) {
             throw new IllegalArgumentException("id must be greater than 0");
         }
+
         val sql = "SELECT * FROM users WHERE id = ?";
         try (
             val connection = dataSource.getConnection();
@@ -57,7 +61,7 @@ public class CrudController implements CRUD<User> {
 
     @Override
     public void update(long id, User newRecord) throws SQLException {
-        if (newRecord == null){
+        if (newRecord == null) {
             throw new IllegalArgumentException("User must not be null");
         }
         if (newRecord.username().isBlank()) {
@@ -66,7 +70,6 @@ public class CrudController implements CRUD<User> {
         if (id <= 0) {
             throw new IllegalArgumentException("User id must be positive");
         }
-
 
         val sql =
             """
@@ -99,4 +102,5 @@ public class CrudController implements CRUD<User> {
             preparedStatement.executeUpdate();
         }
     }
+
 }
