@@ -37,7 +37,7 @@ public class CrudController implements CRUD<User> {
     }
 
     @Override
-    public Optional<User> read(long id) throws SQLException {
+    public Optional<User> read(int id) throws SQLException {
         if (id <= 0) {
             throw new IllegalArgumentException("id must be greater than 0");
         }
@@ -59,7 +59,7 @@ public class CrudController implements CRUD<User> {
     }
 
     @Override
-    public void update(long id, User newRecord) throws SQLException {
+    public void update(int id, User newRecord) throws SQLException {
         if (newRecord == null){
             throw new IllegalArgumentException("User must not be null");
         }
@@ -87,7 +87,7 @@ public class CrudController implements CRUD<User> {
     }
 
     @Override
-    public void delete(long id) throws SQLException {
+    public void delete(int id) throws SQLException {
         if (id <= 0) {
             throw new IllegalArgumentException("User id must be positive");
         }
